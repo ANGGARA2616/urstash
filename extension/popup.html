@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>Save to Stash</title>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="head">
+        <span class="brand">Stash</span>
+        <button id="gear" class="ghost" title="Settings" type="button">⚙</button>
+      </header>
+
+      <!-- Settings / connect view -->
+      <section id="settings" class="view hidden">
+        <p class="hint">Connect this extension to your Stash. Generate a token in the web app under <b>Settings → Access tokens</b>.</p>
+        <label class="field">
+          <span class="label">API URL</span>
+          <input id="apiUrl" type="url" placeholder="http://localhost:3000" />
+        </label>
+        <label class="field">
+          <span class="label">Access token</span>
+          <input id="token" type="password" placeholder="Paste your token" />
+        </label>
+        <div class="row">
+          <button id="save-settings" class="btn primary" type="button">Save</button>
+          <button id="cancel-settings" class="btn secondary hidden" type="button">Cancel</button>
+        </div>
+        <p id="settings-msg" class="msg"></p>
+      </section>
+
+      <!-- Capture view -->
+      <section id="capture" class="view hidden">
+        <div class="seg" id="type-seg">
+          <button class="seg-btn active" data-type="link" type="button">Link</button>
+          <button class="seg-btn" data-type="screenshot" type="button">Screenshot</button>
+          <button class="seg-btn" data-type="note" type="button">Note</button>
+        </div>
+
+        <label class="field">
+          <span class="label">Title</span>
+          <input id="title" type="text" placeholder="Title" />
+        </label>
+
+        <label class="field" id="url-field">
+          <span class="label">URL</span>
+          <input id="url" type="url" placeholder="https://…" />
+        </label>
+
+        <label class="field">
+          <span class="label" id="desc-label">Description</span>
+          <textarea id="description" rows="3" placeholder="Notes or selected text…"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="label">Tags <span class="muted">(comma separated)</span></span>
+          <input id="tags" type="text" placeholder="ai, design, tools" />
+        </label>
+
+        <label class="check" id="shot-field">
+          <input id="shot" type="checkbox" checked />
+          <span>Include viewport screenshot</span>
+        </label>
+
+        <button id="save" class="btn primary block" type="button">Save to Stash</button>
+        <p id="msg" class="msg"></p>
+      </section>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

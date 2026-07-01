@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Stash design system — ported from mobbinstyle tokens.
+   Minimal, neutral, glassmorphism, pill-shaped. Inter + Geist Mono.
+   ============================================================ */
+
+@theme {
+  /* ---- Fonts (wired to next/font CSS vars) ---- */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* ---- Neutral ---- */
+  --color-ink: #141414;
+  --color-secondary: #717171;
+  --color-muted: #adadad;
+  --color-surface: #ffffff;
+  --color-surface-dark: #141414;
+  --color-canvas: #f7f7f8;
+
+  /* ---- Border & fill ---- */
+  --color-border: rgba(65, 65, 65, 0.16);
+  --color-fill: rgba(64, 64, 64, 0.06);
+  --color-glass: rgba(237, 237, 237, 0.64);
+
+  /* ---- Accent / interactive ---- */
+  --color-accent: #0099ff;
+  --color-accent-strong: #0065ff;
+  --color-accent-alt: #0047f0;
+
+  /* ---- Status + soft tints ---- */
+  --color-success: #3ba213;
+  --color-success-tint: #e7f6e2;
+  --color-warning: #a86500;
+  --color-warning-tint: #fbeed0;
+  --color-danger: #ce2b04;
+  --color-danger-tint: #ffe3d8;
+  --color-accent-tint: #e0f0ff;
+
+  /* ---- Radius (avoid clobbering Tailwind rounded-lg/xl) ---- */
+  --radius-pill: 999px;
+  --radius-card: 16px;
+  --radius-panel: 20px;
+  --radius-panel-lg: 24px;
+  --radius-nav: 30px;
+
+  /* ---- Elevation ---- */
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+@layer base {
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer components {
+  /* ---- Button: pill with primary shine sweep (verbatim from mobbin) ---- */
+  .btn {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    border-radius: var(--radius-pill);
+    border: 0;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+  .btn-label {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-sm { font-size: 14px; line-height: 20px; padding: 8px 14px; }
+  .btn-md { font-size: 16px; line-height: 22px; padding: 11px 16px; }
+  .btn-lg { font-size: 16px; line-height: 22px; padding: 14px 22px; }
+
+  .btn-primary { background: var(--color-ink); color: var(--color-surface); }
+  .btn-primary:hover { background: #262626; }
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+  }
+  .btn-primary:hover::after { left: 120%; }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0);
+    color: var(--color-ink);
+    border: 1px solid var(--color-border);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  .btn-secondary:hover { background: var(--color-fill); }
+
+  .btn-accent { background: var(--color-accent); color: var(--color-surface); }
+  .btn-accent:hover { background: var(--color-accent-strong); }
+
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ---- Navbar: glassmorphism (verbatim from mobbin) ---- */
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px 12px 20px;
+    background: var(--color-glass);
+    backdrop-filter: blur(48px);
+    -webkit-backdrop-filter: blur(48px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-nav);
+    font-family: var(--font-sans);
+    box-sizing: border-box;
+  }
+  .navbar-sticky { position: sticky; top: 16px; z-index: 50; }
+  .navlink {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    letter-spacing: 0.2px;
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .navlink:hover { color: var(--color-secondary); }
+  .navlink[data-active="true"] { color: var(--color-ink); }
+}

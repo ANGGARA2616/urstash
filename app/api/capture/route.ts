@@ -1,0 +1,123 @@
+import { randomUUID } from "crypto";
+import { z } from "zod";
+import { db } from "@/db";
+import { items, type ItemContent } from "@/db/schema";
+import { resolveUser } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { MEDIA_BUCKET } from "@/lib/constants";
+
+/**
+ * POST /api/capture — the single endpoint the Chrome extension calls (Bearer token).
+ * Also works with a web session. Uploads an optional viewport screenshot
+ * server-side (service role) into the user's folder, then inserts the item.
+ * CORS-enabled so it's reachable from the extension popup origin.
+ */
+
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+  "Access-Control-Max-Age": "86400",
+};
+
+function cors(res: Response): Response {
+  for (const [k, v] of Object.entries(CORS_HEADERS)) res.headers.set(k, v);
+  return res;
+}
+
+function json(body: unknown, status = 200): Response {
+  return cors(Response.json(body, { status }));
+}
+
+export function OPTIONS() {
+  return cors(new Response(null, { status: 204 }));
+}
+
+const captureSchema = z.object({
+  type: z.enum(["link", "screenshot", "note"]).default("link"),
+  title: z.string().min(1).max(500),
+  url: z.string().url().optional(),
+  description: z.string().optional(),
+  tags: z.array(z.string()).default([]),
+  // data URL: "data:image/png;base64,...."
+  screenshot: z.string().optional(),
+});
+
+async function uploadScreenshot(
+  userId: string,
+  dataUrl: string,
+): Promise<string> {
+  const m = /^data:(image\/[\w.+-]+);base64,(.+)$/.exec(dataUrl);
+  if (!m) throw new Error("Malformed screenshot data URL");
+  const contentType = m[1];
+  const buffer = Buffer.from(m[2], "base64");
+  const ext = contentType.split("/")[1]?.split("+")[0] || "png";
+  const path = `${userId}/captures/${randomUUID()}.${ext}`;
+
+  const admin = createAdminClient();
+  const { error } = await admin.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, buffer, { contentType, upsert: false });
+  if (error) throw error;
+  return path;
+}
+
+export async function POST(request: Request) {
+  const user = await resolveUser(request);
+  if (!user) return json({ error: "Unauthorized" }, 401);
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON" }, 400);
+  }
+
+  const parsed = captureSchema.safeParse(body);
+  if (!parsed.success) {
+    return json(
+      { error: "Invalid capture", details: parsed.error.flatten() },
+      400,
+    );
+  }
+  const { type, title, url, description, tags, screenshot } = parsed.data;
+
+  let screenshotPath: string | undefined;
+  if (screenshot) {
+    try {
+      screenshotPath = await uploadScreenshot(user.id, screenshot);
+    } catch (e) {
+      return json(
+        { error: e instanceof Error ? e.message : "Screenshot upload failed" },
+        502,
+      );
+    }
+  }
+
+  let content: ItemContent;
+  if (type === "screenshot") {
+    if (!screenshotPath) {
+      return json({ error: "screenshot is required for type screenshot" }, 400);
+    }
+    content = { imageUrl: screenshotPath, ...(url ? { sourceUrl: url } : {}) };
+  } else if (type === "note") {
+    content = { body: description || title };
+  } else {
+    // link (default)
+    if (!url) {
+      return json({ error: "url is required for type link" }, 400);
+    }
+    content = {
+      url,
+      ...(description ? { description } : {}),
+      ...(screenshotPath ? { screenshotUrl: screenshotPath } : {}),
+    };
+  }
+
+  const [row] = await db
+    .insert(items)
+    .values({ userId: user.id, type, title, content, tags })
+    .returning();
+
+  return json({ item: row }, 201);
+}
