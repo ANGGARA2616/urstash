@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Circle } from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, Circle } from "lucide-react";
 import type { Item } from "@/db/schema";
 import {
   ItemCard,
@@ -10,6 +10,12 @@ import {
   ITEM_CARD_SURFACE,
 } from "@/components/item-card";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 type Col = { id: string; name: string };
@@ -87,6 +93,11 @@ export function ItemsGrid({
     router.refresh();
   }
 
+  const targetLabel =
+    target === NEW
+      ? "+ New collection"
+      : (collections.find((c) => c.id === target)?.name ?? "Add to…");
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -96,21 +107,13 @@ export function ItemsGrid({
             : `${items.length} item${items.length === 1 ? "" : "s"}`}
         </span>
         {selectMode ? (
-          <button
-            type="button"
-            onClick={reset}
-            className="text-sm text-secondary hover:text-ink"
-          >
+          <Button variant="secondary" size="sm" onClick={reset}>
             Cancel
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
-            onClick={() => setSelectMode(true)}
-            className="text-sm font-medium text-accent-strong hover:underline"
-          >
+          <Button variant="secondary" size="sm" onClick={() => setSelectMode(true)}>
             Select
-          </button>
+          </Button>
         )}
       </div>
 
@@ -134,19 +137,24 @@ export function ItemsGrid({
           <span className="text-sm font-medium text-ink">
             {selected.size} selected
           </span>
-          <select
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="rounded-pill border border-border bg-fill px-3 py-1.5 text-sm text-ink outline-none focus:border-ink"
-          >
-            <option value="">Add to…</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-            <option value={NEW}>+ New collection</option>
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-sm text-ink outline-none transition-colors hover:bg-fill">
+              {targetLabel}
+              <ChevronDown size={14} className="text-secondary" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+              {collections.map((c) => (
+                <DropdownMenuItem key={c.id} onSelect={() => setTarget(c.id)}>
+                  {c.name}
+                  {target === c.id && <Check size={14} className="ml-auto" />}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuItem onSelect={() => setTarget(NEW)}>
+                + New collection
+                {target === NEW && <Check size={14} className="ml-auto" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {target === NEW && (
             <input
               value={newName}

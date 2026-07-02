@@ -1,6 +1,13 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Check, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function UrlSelect({
   param,
@@ -26,18 +33,26 @@ export function UrlSelect({
 
   if (options.length === 0) return null;
 
+  const activeLabel = options.find((o) => o.value === value)?.label ?? placeholder;
+
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded-pill border border-border bg-surface px-3 py-1.5 text-sm text-ink outline-none transition-colors focus:border-ink"
-    >
-      <option value="">{placeholder}</option>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-sm text-ink outline-none transition-colors hover:bg-fill">
+        {activeLabel}
+        <ChevronDown size={14} className="text-secondary" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+        <DropdownMenuItem onSelect={() => onChange("")}>
+          {placeholder}
+          {value === "" && <Check size={14} className="ml-auto" />}
+        </DropdownMenuItem>
+        {options.map((o) => (
+          <DropdownMenuItem key={o.value} onSelect={() => onChange(o.value)}>
+            {o.label}
+            {value === o.value && <Check size={14} className="ml-auto" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

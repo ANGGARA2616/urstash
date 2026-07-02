@@ -34,11 +34,10 @@ export default async function ItemDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link
-        href="/dashboard"
-        className="text-sm text-secondary hover:text-ink"
-      >
-        ← Back to stash
+      <Link href="/dashboard">
+        <Button variant="secondary" size="sm">
+          ← Back to stash
+        </Button>
       </Link>
 
       <div className="mt-4 flex items-start justify-between gap-4">
