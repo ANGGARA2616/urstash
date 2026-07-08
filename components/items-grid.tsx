@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, CheckCircle2, ChevronDown, Circle } from "lucide-react";
 import type { Item } from "@/db/schema";
 import {
@@ -9,6 +9,8 @@ import {
   ItemCardBody,
   ITEM_CARD_SURFACE,
 } from "@/components/item-card";
+import { Pagination } from "@/components/pagination";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,12 +26,22 @@ const NEW = "__new__";
 
 export function ItemsGrid({
   items,
+  previews,
   collections,
 }: {
   items: Item[];
+  previews: Record<string, string>;
   collections: Col[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const pageSize = isDesktop ? 15 : 10;
+  const rawPage = Number(searchParams.get("page")) || 1;
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const currentPage = Math.min(Math.max(1, rawPage), totalPages);
+  const visible = items.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const [selectMode, setSelectMode] = React.useState(false);
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [target, setTarget] = React.useState("");
@@ -118,19 +130,22 @@ export function ItemsGrid({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) =>
+        {visible.map((item) =>
           selectMode ? (
             <SelectableCard
               key={item.id}
               item={item}
+              previewUrl={previews[item.id]}
               selected={selected.has(item.id)}
               onToggle={() => toggle(item.id)}
             />
           ) : (
-            <ItemCard key={item.id} item={item} />
+            <ItemCard key={item.id} item={item} previewUrl={previews[item.id]} />
           ),
         )}
       </div>
+
+      <Pagination totalPages={totalPages} currentPage={currentPage} />
 
       {selectMode && selected.size > 0 && (
         <div className="sticky bottom-4 z-40 mx-auto flex w-full max-w-2xl flex-wrap items-center gap-2 rounded-pill border border-border bg-surface/90 px-4 py-3 shadow-soft backdrop-blur">
@@ -175,10 +190,12 @@ export function ItemsGrid({
 
 function SelectableCard({
   item,
+  previewUrl,
   selected,
   onToggle,
 }: {
   item: Item;
+  previewUrl?: string;
   selected: boolean;
   onToggle: () => void;
 }) {
@@ -202,7 +219,7 @@ function SelectableCard({
           <Circle size={20} className="text-muted" />
         )}
       </span>
-      <ItemCardBody item={item} hideFavorite />
+      <ItemCardBody item={item} previewUrl={previewUrl} hideFavorite />
     </button>
   );
 }

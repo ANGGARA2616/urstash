@@ -24,6 +24,7 @@ export const screenshotContentSchema = z.object({
 
 export const noteContentSchema = z.object({
   body: z.string().min(1),
+  format: z.literal("html").optional(),
 });
 
 /** `link` and `tool` share the same content shape. */

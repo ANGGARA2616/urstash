@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { items, type ItemContent } from "@/db/schema";
 import { withUser } from "@/lib/auth";
 import { contentSchemaFor, updateItemSchema } from "@/lib/content-schemas";
+import { extractPromptVariables } from "@/lib/prompt-variables";
 
 type Params = { id: string };
 
@@ -57,6 +58,11 @@ export const PATCH = withUser<Params>(async (request, { user, params }) => {
           details: contentParsed.error.flatten(),
         },
         { status: 400 },
+      );
+    }
+    if (existing.type === "prompt" && "promptText" in contentParsed.data) {
+      contentParsed.data.variables = extractPromptVariables(
+        contentParsed.data.promptText,
       );
     }
     updates.content = contentParsed.data as ItemContent;

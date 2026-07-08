@@ -154,11 +154,7 @@ export function DropdownMenuContent({
   const contentRef = React.useRef<HTMLDivElement>(null);
   const [coords, setCoords] = React.useState<{ top: number; left: number } | null>(null);
 
-  useIsomorphicLayoutEffect(() => {
-    if (!open) {
-      setCoords(null);
-      return;
-    }
+  const updatePosition = React.useCallback(() => {
     const trigger = triggerRef.current;
     const content = contentRef.current;
     if (!trigger || !content) return;
@@ -176,8 +172,28 @@ export function DropdownMenuContent({
       top = triggerRect.top - contentRect.height - sideOffset;
     }
 
-    setCoords({ top: top + window.scrollY, left: left + window.scrollX });
-  }, [open, align, sideOffset]);
+    setCoords({ top, left });
+  }, [align, sideOffset, triggerRef]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (!open) {
+      setCoords(null);
+      return;
+    }
+    updatePosition();
+  }, [open, updatePosition]);
+
+  // Keep the menu glued to its trigger while scrolling — the trigger may live
+  // in a sticky bar that moves relative to the document.
+  React.useEffect(() => {
+    if (!open) return;
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open, updatePosition]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -210,7 +226,7 @@ export function DropdownMenuContent({
         role="menu"
         data-state="open"
         style={{
-          position: "absolute",
+          position: "fixed",
           top: coords?.top ?? -9999,
           left: coords?.left ?? -9999,
           visibility: coords ? "visible" : "hidden",
@@ -374,11 +390,7 @@ export function DropdownMenuSubContent({ className, children, ...rest }: React.H
   const contentRef = React.useRef<HTMLDivElement>(null);
   const [coords, setCoords] = React.useState<{ top: number; left: number } | null>(null);
 
-  useIsomorphicLayoutEffect(() => {
-    if (!open) {
-      setCoords(null);
-      return;
-    }
+  const updatePosition = React.useCallback(() => {
     const trigger = triggerRef.current;
     const content = contentRef.current;
     if (!trigger || !content) return;
@@ -395,8 +407,26 @@ export function DropdownMenuSubContent({ className, children, ...rest }: React.H
       top = window.innerHeight - contentRect.height - 8;
     }
 
-    setCoords({ top: top + window.scrollY, left: left + window.scrollX });
-  }, [open]);
+    setCoords({ top, left });
+  }, [triggerRef]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (!open) {
+      setCoords(null);
+      return;
+    }
+    updatePosition();
+  }, [open, updatePosition]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open, updatePosition]);
 
   if (!open) return null;
 
@@ -409,7 +439,7 @@ export function DropdownMenuSubContent({ className, children, ...rest }: React.H
         onMouseEnter={cancelClose}
         onMouseLeave={closeSoon}
         style={{
-          position: "absolute",
+          position: "fixed",
           top: coords?.top ?? -9999,
           left: coords?.left ?? -9999,
           visibility: coords ? "visible" : "hidden",

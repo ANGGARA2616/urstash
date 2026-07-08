@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
 import { ImageUpload } from "@/components/image-upload";
+import { NoteEditor } from "@/components/forms/note-editor";
 
 type CollectionOption = { id: string; name: string };
 
@@ -79,12 +80,20 @@ export function ItemForm({
       case "screenshot":
         return { imageUrl, ...(sourceUrl ? { sourceUrl } : {}) };
       case "note":
-        return { body };
+        return { body, format: "html" };
     }
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // The rich text editor has no native `required`; an empty document
+    // serializes as e.g. "<p></p>", so check the text content instead.
+    if (type === "note" && body.replace(/<[^>]*>/g, "").trim() === "") {
+      setError("Note can't be empty.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -162,7 +171,10 @@ export function ItemForm({
 
       {type === "prompt" && (
         <>
-          <Field label="Prompt">
+          <Field
+            label="Prompt"
+            hint="Use {{variable}} placeholders — they become fill-in fields on the detail page"
+          >
             <Textarea
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
@@ -199,13 +211,11 @@ export function ItemForm({
       )}
 
       {type === "note" && (
-        <Field label="Note" hint="Markdown supported">
-          <Textarea
+        <Field label="Note">
+          <NoteEditor
             value={body}
-            onChange={(e) => setBody(e.target.value)}
-            required
-            rows={8}
-            placeholder="Write anything…"
+            format={c.format === "html" ? "html" : undefined}
+            onChange={setBody}
           />
         </Field>
       )}

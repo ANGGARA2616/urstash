@@ -14,6 +14,7 @@ export function FavoriteFilter() {
     const sp = new URLSearchParams(params.toString());
     if (active) sp.delete("favorite");
     else sp.set("favorite", "true");
+    sp.delete("page");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }

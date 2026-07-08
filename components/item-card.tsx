@@ -1,7 +1,10 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { FavoriteToggle } from "@/components/favorite-toggle";
-import { TYPE_META, itemSnippet } from "@/lib/item-types";
+import { TYPE_META } from "@/lib/item-types";
 import { cn } from "@/lib/utils";
 import type { Item } from "@/db/schema";
 
@@ -9,20 +12,43 @@ import type { Item } from "@/db/schema";
 export const ITEM_CARD_SURFACE =
   "group relative flex flex-col rounded-card border bg-surface p-5 transition-shadow";
 
+/** Lazy thumbnail with a fade-in once the image has loaded. */
+function CardThumb({ src }: { src: string }) {
+  const [loaded, setLoaded] = React.useState(false);
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onLoad={() => setLoaded(true)}
+      className={cn(
+        "mb-3 aspect-video w-full rounded-panel border border-border bg-fill object-cover transition-opacity duration-300",
+        loaded ? "opacity-100" : "opacity-0",
+      )}
+    />
+  );
+}
+
 /** Inner content, reused by the link card and the selectable card. */
 export function ItemCardBody({
   item,
+  previewUrl,
   hideFavorite = false,
 }: {
   item: Item;
+  previewUrl?: string;
   hideFavorite?: boolean;
 }) {
   const meta = TYPE_META[item.type];
   const Icon = meta.icon;
-  const snippet = itemSnippet(item);
 
   return (
     <>
+      {previewUrl && <CardThumb src={previewUrl} />}
+
       <div className="mb-3 flex items-center justify-between">
         <Badge tone={meta.tone}>
           <Icon size={12} />
@@ -36,9 +62,6 @@ export function ItemCardBody({
       <h3 className="line-clamp-2 text-base font-semibold tracking-[-0.2px] text-ink">
         {item.title}
       </h3>
-      {snippet && (
-        <p className="mt-1 line-clamp-2 text-sm text-secondary">{snippet}</p>
-      )}
 
       {item.tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -56,13 +79,19 @@ export function ItemCardBody({
   );
 }
 
-export function ItemCard({ item }: { item: Item }) {
+export function ItemCard({
+  item,
+  previewUrl,
+}: {
+  item: Item;
+  previewUrl?: string;
+}) {
   return (
     <Link
       href={`/items/${item.id}`}
       className={cn(ITEM_CARD_SURFACE, "border-border hover:shadow-soft")}
     >
-      <ItemCardBody item={item} />
+      <ItemCardBody item={item} previewUrl={previewUrl} />
     </Link>
   );
 }

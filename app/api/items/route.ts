@@ -2,17 +2,22 @@ import { db } from "@/db";
 import { items } from "@/db/schema";
 import { withUser } from "@/lib/auth";
 import { contentSchemaFor, createItemSchema } from "@/lib/content-schemas";
+import { extractPromptVariables } from "@/lib/prompt-variables";
 import { listItems } from "@/lib/queries";
 
 /** GET /api/items?q=&type=&tag=&collection=&favorite= — list + search + filters. */
 export const GET = withUser(async (request, { user }) => {
   const { searchParams } = new URL(request.url);
+  const limitParam = Number(searchParams.get("limit") ?? NaN);
   const rows = await listItems(user.id, {
     q: searchParams.get("q"),
     type: searchParams.get("type"),
     tag: searchParams.get("tag"),
     collection: searchParams.get("collection"),
     favorite: searchParams.get("favorite") === "true",
+    limit: Number.isInteger(limitParam)
+      ? Math.min(Math.max(limitParam, 1), 50)
+      : undefined,
   });
   return Response.json({ items: rows });
 });
@@ -43,6 +48,12 @@ export const POST = withUser(async (request, { user }) => {
         details: contentParsed.error.flatten(),
       },
       { status: 400 },
+    );
+  }
+
+  if (type === "prompt" && "promptText" in contentParsed.data) {
+    contentParsed.data.variables = extractPromptVariables(
+      contentParsed.data.promptText,
     );
   }
 

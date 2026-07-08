@@ -11,6 +11,9 @@ import { Card } from "@/components/ui/card";
 import { FavoriteToggle } from "@/components/favorite-toggle";
 import { CopyButton } from "@/components/copy-button";
 import { DeleteItemButton } from "@/components/delete-item-button";
+import { NoteBody } from "@/components/note-body";
+import { PromptFill } from "@/components/prompt-fill";
+import { extractPromptVariables } from "@/lib/prompt-variables";
 import type {
   LinkContent,
   NoteContent,
@@ -36,7 +39,7 @@ export default async function ItemDetailPage({
     <div className="mx-auto max-w-3xl">
       <Link href="/dashboard">
         <Button variant="secondary" size="sm">
-          ← Back to stash
+          Back to stash
         </Button>
       </Link>
 
@@ -110,6 +113,8 @@ async function ItemBody({
           <img
             src={shot}
             alt={item.title}
+            loading="lazy"
+            decoding="async"
             className="mt-1 w-full rounded-panel border border-border"
           />
         )}
@@ -119,6 +124,20 @@ async function ItemBody({
 
   if (item.type === "prompt") {
     const c = item.content as PromptContent;
+    // Fallback covers prompts saved before variables were derived server-side.
+    const vars = c.variables ?? extractPromptVariables(c.promptText);
+    if (vars.length > 0) {
+      return (
+        <Card className="flex flex-col gap-3">
+          {c.targetAi && (
+            <div>
+              <Badge tone="neutral">{c.targetAi}</Badge>
+            </div>
+          )}
+          <PromptFill promptText={c.promptText} variables={vars} />
+        </Card>
+      );
+    }
     return (
       <Card className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -146,6 +165,8 @@ async function ItemBody({
           <img
             src={src}
             alt={item.title}
+            loading="lazy"
+            decoding="async"
             className="w-full rounded-panel border border-border"
           />
         ) : (
@@ -170,7 +191,11 @@ async function ItemBody({
   const c = item.content as NoteContent;
   return (
     <Card>
-      <p className="whitespace-pre-wrap leading-relaxed text-ink">{c.body}</p>
+      {c.format === "html" ? (
+        <NoteBody id={item.id} initialBody={c.body} />
+      ) : (
+        <p className="whitespace-pre-wrap leading-relaxed text-ink">{c.body}</p>
+      )}
     </Card>
   );
 }

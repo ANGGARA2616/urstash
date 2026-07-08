@@ -20,6 +20,7 @@ export function TypeFilter() {
     const sp = new URLSearchParams(params.toString());
     if (value) sp.set("type", value);
     else sp.delete("type");
+    sp.delete("page");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }

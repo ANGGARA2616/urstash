@@ -18,6 +18,7 @@ export function SearchBar() {
       const sp = new URLSearchParams(params.toString());
       if (value) sp.set("q", value);
       else sp.delete("q");
+      sp.delete("page");
       const qs = sp.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname);
     }, 300);

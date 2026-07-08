@@ -14,6 +14,7 @@ export type ItemFilters = {
   tag?: string | null;
   collection?: string | null;
   favorite?: boolean;
+  limit?: number;
 };
 
 /** Shared list+search+filter used by both /api/items and the dashboard server page. */
@@ -31,15 +32,18 @@ export async function listItems(userId: string, f: ItemFilters = {}) {
     const match = or(
       ilike(items.title, like),
       sql`${items.content}::text ilike ${like}`,
+      sql`array_to_string(${items.tags}, ' ') ilike ${like}`,
     );
     if (match) conditions.push(match);
   }
 
-  return db
+  const query = db
     .select()
     .from(items)
     .where(and(...conditions))
     .orderBy(desc(items.isFavorite), desc(items.createdAt));
+
+  return f.limit ? query.limit(f.limit) : query;
 }
 
 export async function getItem(userId: string, id: string) {

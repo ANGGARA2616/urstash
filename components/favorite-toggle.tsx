@@ -44,7 +44,7 @@ export function FavoriteToggle({
       aria-label={fav ? "Remove from favorites" : "Add to favorites"}
       className={cn(
         "rounded-full p-1.5 transition-colors hover:bg-fill",
-        fav ? "text-warning" : "text-muted",
+        fav ? "text-star" : "text-muted",
       )}
     >
       <Star size={size} fill={fav ? "currentColor" : "none"} />

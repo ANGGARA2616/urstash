@@ -30,7 +30,8 @@ export type ScreenshotContent = {
   sourceUrl?: string;
   styleTags?: string[];
 };
-export type NoteContent = { body: string };
+/** `format: "html"` marks rich-text bodies; absent means legacy plain text. */
+export type NoteContent = { body: string; format?: "html" };
 
 /** `link` and `tool` share the same content shape. */
 export type ItemContent =

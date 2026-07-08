@@ -27,6 +27,7 @@ export function UrlSelect({
     const sp = new URLSearchParams(params.toString());
     if (v) sp.set(param, v);
     else sp.delete(param);
+    sp.delete("page");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
