@@ -109,10 +109,12 @@ export function NoteBody({
         body: JSON.stringify({ content: { body: next, format: "html" } }),
       });
       if (!res.ok) {
+        console.error("Failed to persist task checklist update:", res.statusText);
         setBody(prev);
         setError(true);
       }
-    } catch {
+    } catch (err) {
+      console.error("Network exception while updating task checklist:", err);
       setBody(prev);
       setError(true);
     } finally {

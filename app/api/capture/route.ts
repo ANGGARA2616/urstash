@@ -125,8 +125,10 @@ export async function POST(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
-  } catch {
-    return json({ error: "Invalid JSON" }, 400);
+  } catch (err) {
+    const details =
+      err instanceof Error ? err.message : "Malformed JSON syntax";
+    return json({ error: "Invalid JSON", details }, 400, request);
   }
 
   const parsed = captureSchema.safeParse(body);

@@ -16,7 +16,10 @@ export async function getSignedUrl(
   const { data, error } = await supabase.storage
     .from(MEDIA_BUCKET)
     .createSignedUrl(path, expiresIn);
-  if (error) return null;
+  if (error) {
+    console.error(`Failed to create signed URL for path "${path}":`, error.message);
+    return null;
+  }
   return data?.signedUrl ?? null;
 }
 
@@ -41,7 +44,12 @@ export async function getSignedUrls(
   const { data, error } = await supabase.storage
     .from(MEDIA_BUCKET)
     .createSignedUrls(storagePaths, expiresIn);
-  if (error || !data) return resolved;
+  if (error || !data) {
+    if (error) {
+      console.error("Failed to batch create signed URLs:", error.message);
+    }
+    return resolved;
+  }
 
   for (const entry of data) {
     if (!entry.error && entry.path && entry.signedUrl) {
