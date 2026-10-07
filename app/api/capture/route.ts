@@ -13,24 +13,39 @@ import { MEDIA_BUCKET } from "@/lib/constants";
  * CORS-enabled so it's reachable from the extension popup origin.
  */
 
-const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Authorization, Content-Type",
-  "Access-Control-Max-Age": "86400",
-};
+/**
+ * Restricted CORS policy:
+ * Instead of wildcard "*", restrict allowed origin to chrome-extension or site URL
+ * to avoid overly permissive cross-origin resource sharing (SonarLint S5122).
+ */
+function getCorsHeaders(request?: Request): Record<string, string> {
+  const requestOrigin = request?.headers.get("origin");
+  const allowedOrigin =
+    requestOrigin &&
+    (requestOrigin.startsWith("chrome-extension://") ||
+      requestOrigin === process.env.NEXT_PUBLIC_SITE_URL)
+      ? requestOrigin
+      : process.env.NEXT_PUBLIC_SITE_URL ?? "chrome-extension://*";
 
-function cors(res: Response): Response {
-  for (const [k, v] of Object.entries(CORS_HEADERS)) res.headers.set(k, v);
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+function cors(res: Response, req?: Request): Response {
+  for (const [k, v] of Object.entries(getCorsHeaders(req))) res.headers.set(k, v);
   return res;
 }
 
-function json(body: unknown, status = 200): Response {
-  return cors(Response.json(body, { status }));
+function json(body: unknown, status = 200, req?: Request): Response {
+  return cors(Response.json(body, { status }), req);
 }
 
-export function OPTIONS() {
-  return cors(new Response(null, { status: 204 }));
+export function OPTIONS(request: Request) {
+  return cors(new Response(null, { status: 204 }), request);
 }
 
 const captureSchema = z.object({

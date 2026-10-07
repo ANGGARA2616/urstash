@@ -9,6 +9,30 @@ const TASK_CHECKBOX_SELECTOR =
  * Renders an HTML note body and lets task-list checkboxes be toggled from the
  * read view, persisting the updated HTML via PATCH /api/items/[id].
  */
+/**
+ * Sanitizes HTML content before rendering to mitigate Cross-Site Scripting (XSS).
+ * Removes script tags, plugins, and inline event handlers.
+ */
+function sanitizeHtml(rawHtml: string): string {
+  if (typeof window === "undefined") return rawHtml;
+  const doc = new DOMParser().parseFromString(rawHtml, "text/html");
+  const dangerous = doc.querySelectorAll("script, iframe, object, embed");
+  dangerous.forEach((el) => el.remove());
+  const allElements = doc.querySelectorAll("*");
+  allElements.forEach((el) => {
+    for (let i = el.attributes.length - 1; i >= 0; i--) {
+      const attr = el.attributes[i];
+      if (
+        attr.name.toLowerCase().startsWith("on") ||
+        attr.value.trim().toLowerCase().startsWith("javascript:")
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+  return doc.body.innerHTML;
+}
+
 export function NoteBody({
   id,
   initialBody,
@@ -83,7 +107,7 @@ export function NoteBody({
         ref={containerRef}
         className="prose-note text-ink"
         onClick={handleClick}
-        dangerouslySetInnerHTML={{ __html: body }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(body) }}
       />
       {error && (
         <p className="mt-2 text-sm text-danger">
