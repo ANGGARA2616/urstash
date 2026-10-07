@@ -45,17 +45,38 @@ export function ItemCardBody({
   const meta = TYPE_META[item.type];
   const Icon = meta.icon;
 
+  // Derive item status from existing data — no DB change needed
+  const status: "favorited" | "saved" | null = item.isFavorite
+    ? "favorited"
+    : item.collectionId
+      ? "saved"
+      : null;
+
   return (
     <>
       {previewUrl && <CardThumb src={previewUrl} />}
 
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <Badge tone={meta.tone}>
           <Icon size={12} />
           {meta.label}
         </Badge>
         {!hideFavorite && (
           <FavoriteToggle id={item.id} isFavorite={item.isFavorite} />
+        )}
+      </div>
+
+      {/* Status badge — reflects current item state */}
+      <div className="mb-3 h-5">
+        {status === "favorited" && (
+          <span className="inline-flex items-center gap-1 rounded-pill bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+            ★ Favorited
+          </span>
+        )}
+        {status === "saved" && (
+          <span className="inline-flex items-center gap-1 rounded-pill bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent-strong">
+            ⊞ In collection
+          </span>
         )}
       </div>
 

@@ -79,13 +79,17 @@ export default function ResetPasswordPage() {
         {sessionState === "ready" && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-secondary">
-                New password
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-secondary">
+                  New password
+                </label>
+                <span className="text-xs text-muted">6–72 characters</span>
+              </div>
               <Input
                 type="password"
                 required
                 minLength={6}
+                maxLength={72}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -100,6 +104,7 @@ export default function ResetPasswordPage() {
                 type="password"
                 required
                 minLength={6}
+                maxLength={72}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="••••••••"

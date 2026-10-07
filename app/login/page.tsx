@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { getURL } from "@/lib/utils";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -52,8 +53,9 @@ export default function LoginPage() {
     setLoading(true);
 
     if (mode === "forgot") {
+      const siteUrl = getURL();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
+        redirectTo: `${siteUrl}/auth/callback?next=/auth/reset-password`,
       });
       setLoading(false);
       if (error) {
@@ -101,9 +103,10 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     setMessage(null);
+    const siteUrl = getURL();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${siteUrl}/auth/callback` },
     });
     setLoading(false);
     if (error) {
@@ -169,6 +172,7 @@ export default function LoginPage() {
                 type="password"
                 required
                 minLength={6}
+                maxLength={72}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -179,14 +183,18 @@ export default function LoginPage() {
             </div>
           )}
           {mode === "signup" && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-secondary">
-                Confirm password
-              </label>
+          <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-secondary">
+                  Confirm password
+                </label>
+                <span className="text-xs text-muted">6–72 characters</span>
+              </div>
               <Input
                 type="password"
                 required
                 minLength={6}
+                maxLength={72}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"

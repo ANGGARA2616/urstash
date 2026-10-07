@@ -23,6 +23,10 @@ import { cn } from "@/lib/utils";
 type Col = { id: string; name: string };
 
 const NEW = "__new__";
+const PAGE_SIZE_KEY = "stash_page_size";
+const PAGE_SIZE_MIN = 5;
+const PAGE_SIZE_MAX = 50;
+const PAGE_SIZE_STEP = 5;
 
 export function ItemsGrid({
   items,
@@ -36,7 +40,36 @@ export function ItemsGrid({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const pageSize = isDesktop ? 15 : 10;
+
+  const defaultPageSize = isDesktop ? 15 : 10;
+
+  // Numeric input — persisted in localStorage
+  const [pageSize, setPageSize] = React.useState(defaultPageSize);
+  const [pageSizeInput, setPageSizeInput] = React.useState(String(defaultPageSize));
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem(PAGE_SIZE_KEY);
+    if (saved) {
+      const n = Number(saved);
+      if (!isNaN(n) && n >= PAGE_SIZE_MIN && n <= PAGE_SIZE_MAX) {
+        setPageSize(n);
+        setPageSizeInput(String(n));
+      }
+    }
+  }, []);
+
+  function applyPageSize(raw: string) {
+    const n = Number(raw);
+    if (isNaN(n)) return;
+    const clamped = Math.min(
+      PAGE_SIZE_MAX,
+      Math.max(PAGE_SIZE_MIN, Math.round(n / PAGE_SIZE_STEP) * PAGE_SIZE_STEP),
+    );
+    setPageSize(clamped);
+    setPageSizeInput(String(clamped));
+    localStorage.setItem(PAGE_SIZE_KEY, String(clamped));
+  }
+
   const rawPage = Number(searchParams.get("page")) || 1;
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(Math.max(1, rawPage), totalPages);
@@ -112,21 +145,42 @@ export function ItemsGrid({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm text-secondary">
           {selectMode
             ? `${selected.size} selected`
             : `${items.length} item${items.length === 1 ? "" : "s"}`}
         </span>
-        {selectMode ? (
-          <Button variant="secondary" size="sm" onClick={reset}>
-            Cancel
-          </Button>
-        ) : (
-          <Button variant="secondary" size="sm" onClick={() => setSelectMode(true)}>
-            Select
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Numeric input with clear boundaries (min 5, max 50) */}
+          {!selectMode && (
+            <label className="flex items-center gap-1.5 text-sm text-secondary">
+              Per page
+              <input
+                type="number"
+                min={PAGE_SIZE_MIN}
+                max={PAGE_SIZE_MAX}
+                step={PAGE_SIZE_STEP}
+                value={pageSizeInput}
+                onChange={(e) => setPageSizeInput(e.target.value)}
+                onBlur={(e) => applyPageSize(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") applyPageSize(pageSizeInput);
+                }}
+                className="w-16 rounded-panel border border-border bg-fill px-2 py-1 text-center text-sm text-ink outline-none focus:border-ink"
+              />
+            </label>
+          )}
+          {selectMode ? (
+            <Button variant="secondary" size="sm" onClick={reset}>
+              Cancel
+            </Button>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={() => setSelectMode(true)}>
+              Select
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
