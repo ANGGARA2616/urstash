@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { db } from "@/db";
 import { items, type ItemContent } from "@/db/schema";
@@ -51,7 +51,7 @@ export function OPTIONS(request: Request) {
 const captureSchema = z.object({
   type: z.enum(["link", "screenshot", "note"]).default("link"),
   title: z.string().min(1).max(500),
-  url: z.string().url().optional(),
+  url: z.url().optional(),
   description: z.string().optional(),
   tags: z.array(z.string()).default([]),
   // data URL: "data:image/png;base64,...."
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
   const parsed = captureSchema.safeParse(body);
   if (!parsed.success) {
     return json(
-      { error: "Invalid capture", details: parsed.error.flatten() },
+      { error: "Invalid capture", details: parsed.error.issues },
       400,
     );
   }
