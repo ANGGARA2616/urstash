@@ -77,6 +77,47 @@ async function uploadScreenshot(
   return path;
 }
 
+/**
+ * Resolves item content payload according to capture type.
+ * Separated to reduce cognitive complexity of POST handler (SonarLint S3776).
+ */
+function resolveCaptureContent(
+  type: "link" | "screenshot" | "note",
+  params: {
+    title: string;
+    url?: string;
+    description?: string;
+    screenshotPath?: string;
+  },
+): { content: ItemContent } | { error: string } {
+  const { title, url, description, screenshotPath } = params;
+
+  if (type === "screenshot") {
+    if (!screenshotPath) {
+      return { error: "screenshot is required for type screenshot" };
+    }
+    return {
+      content: { imageUrl: screenshotPath, ...(url ? { sourceUrl: url } : {}) },
+    };
+  }
+
+  if (type === "note") {
+    return { content: { body: description || title } };
+  }
+
+  // link (default)
+  if (!url) {
+    return { error: "url is required for type link" };
+  }
+  return {
+    content: {
+      url,
+      ...(description ? { description } : {}),
+      ...(screenshotPath ? { screenshotUrl: screenshotPath } : {}),
+    },
+  };
+}
+
 export async function POST(request: Request) {
   const user = await resolveUser(request);
   if (!user) return json({ error: "Unauthorized" }, 401);
@@ -109,25 +150,16 @@ export async function POST(request: Request) {
     }
   }
 
-  let content: ItemContent;
-  if (type === "screenshot") {
-    if (!screenshotPath) {
-      return json({ error: "screenshot is required for type screenshot" }, 400);
-    }
-    content = { imageUrl: screenshotPath, ...(url ? { sourceUrl: url } : {}) };
-  } else if (type === "note") {
-    content = { body: description || title };
-  } else {
-    // link (default)
-    if (!url) {
-      return json({ error: "url is required for type link" }, 400);
-    }
-    content = {
-      url,
-      ...(description ? { description } : {}),
-      ...(screenshotPath ? { screenshotUrl: screenshotPath } : {}),
-    };
+  const resolved = resolveCaptureContent(type, {
+    title,
+    url,
+    description,
+    screenshotPath,
+  });
+  if ("error" in resolved) {
+    return json({ error: resolved.error }, 400);
   }
+  const content = resolved.content;
 
   const [row] = await db
     .insert(items)

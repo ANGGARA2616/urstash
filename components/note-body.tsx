@@ -33,6 +33,43 @@ function sanitizeHtml(rawHtml: string): string {
   return doc.body.innerHTML;
 }
 
+/**
+ * Finds the index of a clicked checkbox within task list items.
+ */
+function getCheckboxIndex(
+  target: HTMLElement,
+  container: HTMLElement | null,
+): number {
+  const checkbox = target.closest<HTMLInputElement>(TASK_CHECKBOX_SELECTOR);
+  if (!checkbox || !container) return -1;
+
+  const rendered = Array.from(
+    container.querySelectorAll<HTMLInputElement>(TASK_CHECKBOX_SELECTOR),
+  );
+  return rendered.indexOf(checkbox);
+}
+
+/**
+ * Toggles the checked status of a checkbox item in the serialized HTML document.
+ */
+function toggleCheckboxInHtml(rawHtml: string, index: number): string | null {
+  const doc = new DOMParser().parseFromString(rawHtml, "text/html");
+  const input = doc.body.querySelectorAll<HTMLInputElement>(
+    TASK_CHECKBOX_SELECTOR,
+  )[index];
+  const li = input?.closest("li");
+  if (!input || !li) return null;
+
+  const checked = !input.hasAttribute("checked");
+  if (checked) {
+    input.setAttribute("checked", "checked");
+  } else {
+    input.removeAttribute("checked");
+  }
+  li.setAttribute("data-checked", String(checked));
+  return doc.body.innerHTML;
+}
+
 export function NoteBody({
   id,
   initialBody,
@@ -46,38 +83,20 @@ export function NoteBody({
   const savingRef = React.useRef(false);
 
   async function handleClick(e: React.MouseEvent) {
-    const target = e.target as HTMLElement;
-    const checkbox = target.closest<HTMLInputElement>(TASK_CHECKBOX_SELECTOR);
-    if (!checkbox || !containerRef.current) return;
-
-    // Block the native uncontrolled toggle — state flows through `body`.
-    e.preventDefault();
     if (savingRef.current) return;
 
-    const rendered = Array.from(
-      containerRef.current.querySelectorAll<HTMLInputElement>(
-        TASK_CHECKBOX_SELECTOR,
-      ),
+    const index = getCheckboxIndex(
+      e.target as HTMLElement,
+      containerRef.current,
     );
-    const index = rendered.indexOf(checkbox);
     if (index === -1) return;
 
-    // Toggle in the source string, not the live DOM, so the persisted HTML
-    // stays exactly what TipTap will re-parse on the edit page.
-    const doc = new DOMParser().parseFromString(body, "text/html");
-    const input = doc.body.querySelectorAll<HTMLInputElement>(
-      TASK_CHECKBOX_SELECTOR,
-    )[index];
-    const li = input?.closest("li");
-    if (!input || !li) return;
+    // Block native uncontrolled toggle — state flows through `body`.
+    e.preventDefault();
 
-    const checked = !input.hasAttribute("checked");
-    if (checked) input.setAttribute("checked", "checked");
-    else input.removeAttribute("checked");
-    // TipTap's TaskItem reads data-checked when re-opening the editor.
-    li.setAttribute("data-checked", String(checked));
+    const next = toggleCheckboxInHtml(body, index);
+    if (!next) return;
 
-    const next = doc.body.innerHTML;
     const prev = body;
     setBody(next);
     setError(false);
@@ -105,8 +124,16 @@ export function NoteBody({
     <div>
       <div
         ref={containerRef}
-        className="prose-note text-ink"
+        className="prose-note text-ink cursor-pointer"
+        role="region"
+        aria-label="Note task list interactive content"
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            handleClick(e as unknown as React.MouseEvent);
+          }
+        }}
+        tabIndex={0}
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(body) }}
       />
       {error && (
