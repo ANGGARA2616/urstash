@@ -39,6 +39,13 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     pathname.startsWith("/login") || pathname.startsWith("/auth");
 
+  // If the user arrives at "/" with an auth code (e.g. fallback email redirect), forward to callback
+  if (request.nextUrl.searchParams.has("code") && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    return NextResponse.redirect(url);
+  }
+
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
